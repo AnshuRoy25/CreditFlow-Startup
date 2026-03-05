@@ -1,0 +1,122 @@
+[
+  {
+    "id": 1,
+    "category": "eligibility",
+    "question": "Who can apply for a loan on CreditFlow?",
+    "answer": "Anyone who is an Indian citizen above 18 years of age with a valid PAN card, Aadhaar card, and a bank account with at least 3 months of salary history can apply. We specifically help people who are applying for a loan for the first time and have no prior credit history."
+  },
+  {
+    "id": 2,
+    "category": "eligibility",
+    "question": "I have never taken a loan before. Can I still apply?",
+    "answer": "Yes. CreditFlow is built specifically for people with no credit history. Our NTC scoring model evaluates your application based on your income, employment stability, and banking behaviour rather than your credit score."
+  },
+  {
+    "id": 3,
+    "category": "eligibility",
+    "question": "What is the minimum salary required to apply?",
+    "answer": "You need a minimum monthly salary of 10,000 rupees to be eligible. Both salaried and self employed individuals can apply."
+  },
+  {
+    "id": 4,
+    "category": "application",
+    "question": "What documents do I need to apply?",
+    "answer": "You only need your PAN card number and Aadhaar card number for identity verification, and your last 6 months bank statement in PDF format. No physical documents or branch visits required."
+  },
+  {
+    "id": 5,
+    "category": "application",
+    "question": "How long does the application process take?",
+    "answer": "The entire application form takes about 10 minutes to complete. Once submitted, you will typically receive a decision from a lender within 24 to 48 hours."
+  },
+  {
+    "id": 6,
+    "category": "application",
+    "question": "Is my Aadhaar number stored anywhere?",
+    "answer": "No. Your Aadhaar number is never stored on our servers. We use it only for OTP verification to fetch your name, date of birth, gender, and address. Once verified your Aadhaar number is immediately discarded. This is fully compliant with the Aadhaar Act 2016."
+  },
+  {
+    "id": 7,
+    "category": "application",
+    "question": "Why do you need my bank statement?",
+    "answer": "Since you have no credit history, your bank statement helps us understand your income patterns, spending habits, and financial stability. This is what our model uses to assess your creditworthiness and find the right lender for you."
+  },
+  {
+    "id": 8,
+    "category": "application",
+    "question": "Can I save my application and continue later?",
+    "answer": "Yes. Your application is automatically saved at every step. If you close the app or browser, you can log back in and continue exactly from where you left off."
+  },
+  {
+    "id": 9,
+    "category": "loan",
+    "question": "How much loan can I get?",
+    "answer": "Loan amounts depend on your income, employment stability, and banking behaviour as assessed by our model. You can apply for amounts ranging from 10,000 rupees to 5 lakh rupees."
+  },
+  {
+    "id": 10,
+    "category": "loan",
+    "question": "What is the interest rate?",
+    "answer": "Interest rates vary depending on the lender and your credit profile. Rates typically range from 12 percent to 36 percent per annum. You will see the exact rate offered to you in your loan report before you select a lender."
+  },
+  {
+    "id": 11,
+    "category": "loan",
+    "question": "What loan tenures are available?",
+    "answer": "Loan tenures range from 6 months to 36 months. You can select your preferred tenure during the application and our model will try to match you with a lender that fits your preference."
+  },
+  {
+    "id": 12,
+    "category": "loan",
+    "question": "What can I use the loan for?",
+    "answer": "You can use the loan for personal needs such as medical emergencies, education, travel, gadgets, rent, or business purposes. The loan purpose you select during the application helps lenders understand your requirement."
+  },
+  {
+    "id": 13,
+    "category": "security",
+    "question": "Is my data safe with CreditFlow?",
+    "answer": "Yes. We follow RBI Digital Lending guidelines and the Digital Personal Data Protection Act 2023. Your data is encrypted, never sold to third parties, and used only for loan processing purposes. You can request deletion of your data at any time."
+  },
+  {
+    "id": 14,
+    "category": "security",
+    "question": "Who can see my bank statement?",
+    "answer": "Your bank statement is processed by our system to extract financial signals. The raw PDF is never stored. Only the extracted features are shared with lenders in an anonymised format as part of your credit report."
+  },
+  {
+    "id": 15,
+    "category": "account",
+    "question": "How do I reset my MPIN if I forget it?",
+    "answer": "You can reset your MPIN from the login screen by clicking Forgot MPIN. We will send an OTP to your registered mobile number. After verifying the OTP you can set a new MPIN."
+  },
+  {
+    "id": 16,
+    "category": "account",
+    "question": "Can I apply for multiple loans at the same time?",
+    "answer": "You can only have one active loan application at a time. Once your current application is fully processed and a decision has been made, you can start a new application."
+  },
+  {
+    "id": 17,
+    "category": "account",
+    "question": "How do I check the status of my application?",
+    "answer": "You can check your application status anytime from the My Applications section in your dashboard. We will also notify you via SMS when there is an update on your application."
+  },
+  {
+    "id": 18,
+    "category": "lender",
+    "question": "Who are the lenders on CreditFlow?",
+    "answer": "CreditFlow partners with RBI registered NBFCs and digital lending platforms. All our lending partners are regulated entities and follow RBI guidelines for fair lending practices."
+  },
+  {
+    "id": 19,
+    "category": "lender",
+    "question": "Does CreditFlow itself give the loan?",
+    "answer": "No. CreditFlow is a loan service provider platform. We assess your profile and connect you with the most suitable lender from our partner network. The loan is disbursed directly by the lender to your bank account."
+  },
+  {
+    "id": 20,
+    "category": "lender",
+    "question": "Are there any charges for using CreditFlow?",
+    "answer": "CreditFlow is completely free for borrowers. We do not charge any fees for using our platform or applying for a loan. Lenders may charge processing fees which will be clearly disclosed to you before you accept any offer."
+  }
+]
