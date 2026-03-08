@@ -1,3 +1,5 @@
+// routes/applyLoan/lenderSelection.js
+
 import express from 'express';
 import Lender from '../../models/Lender.js';
 import LoanApplication from '../../models/LoanApplication.js';
@@ -6,13 +8,12 @@ import createNotification from '../../helpers/createNotification.js';
 const router = express.Router();
 
 
-// ─────────────────────────────────────────
+// ─────────────────────────────────────────────────────────
 // Route 1 — Get Eligible and Ineligible Lenders
 // POST /api/apply-loan/lender-selection/match
-// Takes ntcScore, riskTier, loanAmount
-// Goes through all active lenders in DB
-// Splits into eligible and ineligible
-// ─────────────────────────────────────────
+// Takes ntcScore, riskTier, loanAmount from req.body
+// Returns eligible and ineligible lenders
+// ─────────────────────────────────────────────────────────
 router.post('/match', async (req, res) => {
 
   const { ntcScore, riskTier, loanAmount } = req.body;
@@ -40,21 +41,21 @@ router.post('/match', async (req, res) => {
 
     const allLenders = await Lender.find({ status: 'active' });
 
-    const eligibleLenders = [];
+    const eligibleLenders   = [];
     const ineligibleLenders = [];
 
     for (const lender of allLenders) {
 
       const reasons = [];
 
-      // Check 1 — NTC score
+      // Check 1 — NTC score minimum
       if (ntcScore < lender.ntcPolicy.minimumNtcScore) {
         reasons.push(
           `Minimum score required is ${lender.ntcPolicy.minimumNtcScore}. Your score is ${ntcScore}.`
         );
       }
 
-      // Check 2 — Risk tier
+      // Check 2 — Risk tier accepted
       if (!lender.ntcPolicy.acceptedRiskTiers.includes(riskTier)) {
         reasons.push(
           `Your risk tier ${riskTier} is not accepted by this lender.`
@@ -64,31 +65,32 @@ router.post('/match', async (req, res) => {
       // Check 3 — Loan amount minimum
       if (loanAmount < lender.loanOffering.minLoanAmount) {
         reasons.push(
-          `Minimum loan amount for this lender is ${lender.loanOffering.minLoanAmount} rupees.`
+          `Minimum loan amount for this lender is ₹${lender.loanOffering.minLoanAmount}.`
         );
       }
 
       // Check 4 — Loan amount maximum
       if (loanAmount > lender.loanOffering.maxLoanAmount) {
         reasons.push(
-          `Maximum loan amount for this lender is ${lender.loanOffering.maxLoanAmount} rupees.`
+          `Maximum loan amount for this lender is ₹${lender.loanOffering.maxLoanAmount}.`
         );
       }
 
       if (reasons.length === 0) {
 
-        // Calculate personalised interest rate for this borrower
-        // Higher NTC score = rate closer to minimum
-        // Lower NTC score = rate closer to maximum
-        const maxPossibleScore  = 850;
-        const scoreRange        = maxPossibleScore - lender.ntcPolicy.minimumNtcScore;
-        const borrowerAboveMin  = ntcScore - lender.ntcPolicy.minimumNtcScore;
-        const scoreRatio        = borrowerAboveMin / scoreRange;
-        const rateRange         = lender.loanOffering.interestRateRange.max - lender.loanOffering.interestRateRange.min;
-        const offeredRate       = lender.loanOffering.interestRateRange.max - (scoreRatio * rateRange);
-        const finalRate         = Math.round(offeredRate * 10) / 10;
+        // Calculate personalised interest rate
+        // Higher NTC score → rate closer to minimum
+        // Lower NTC score → rate closer to maximum
+        const maxPossibleScore = 850;
+        const scoreRange       = maxPossibleScore - lender.ntcPolicy.minimumNtcScore;
+        const borrowerAboveMin = ntcScore - lender.ntcPolicy.minimumNtcScore;
+        const scoreRatio       = borrowerAboveMin / scoreRange;
+        const rateRange        = lender.loanOffering.interestRateRange.max - lender.loanOffering.interestRateRange.min;
+        const offeredRate      = lender.loanOffering.interestRateRange.max - (scoreRatio * rateRange);
+        const finalRate        = Math.round(offeredRate * 10) / 10;
 
-        // Calculate EMI at offered rate for max tenure
+        // Calculate indicative EMI at offered rate for max tenure
+        // This is shown to the user to compare lenders — not confirmed by lender
         const P   = loanAmount;
         const r   = finalRate / 12 / 100;
         const n   = lender.loanOffering.tenureRange.maxMonths;
@@ -97,16 +99,16 @@ router.post('/match', async (req, res) => {
         const processingFeeAmount = Math.round(loanAmount * lender.loanOffering.processingFeePercentage / 100);
 
         eligibleLenders.push({
-          lenderId:                lender.lenderId,
-          lenderObjectId:          lender._id,        // needed for select route
+          lenderId:                lender.lenderId,       // "LND001" string
+          lenderObjectId:          lender._id,            // ObjectId — needed in /select
           name:                    lender.name,
           logo:                    lender.logo,
           tagline:                 lender.tagline,
-          offeredInterestRate:     finalRate,
+          offeredInterestRate:     finalRate,             // indicative — CreditFlow's estimate
           processingFeePercentage: lender.loanOffering.processingFeePercentage,
-          processingFeeAmount,
+          processingFeeAmount,                            // indicative
           tenureRange:             lender.loanOffering.tenureRange,
-          estimatedEmi:            emi,
+          estimatedEmi:            emi,                   // indicative
           averageDisbursalHours:   lender.disbursal.averageDisbursalHours,
           rating:                  lender.reputation.rating,
           eligible:                true
@@ -127,15 +129,15 @@ router.post('/match', async (req, res) => {
       }
     }
 
-    // Sort eligible lenders by offered rate lowest first
+    // Sort eligible lenders — lowest rate first
     eligibleLenders.sort((a, b) => a.offeredInterestRate - b.offeredInterestRate);
 
     return res.status(200).json({
       success: true,
       data: {
-        totalLenders:      allLenders.length,
-        eligibleCount:     eligibleLenders.length,
-        ineligibleCount:   ineligibleLenders.length,
+        totalLenders:    allLenders.length,
+        eligibleCount:   eligibleLenders.length,
+        ineligibleCount: ineligibleLenders.length,
         eligibleLenders,
         ineligibleLenders
       }
@@ -151,36 +153,18 @@ router.post('/match', async (req, res) => {
 });
 
 
-// ─────────────────────────────────────────
-// Route 2 — Select a Lender and Submit Application
+// Route 2 — Select a Lender
 // POST /api/apply-loan/lender-selection/select
-// Called when user picks a lender and clicks Submit
-// Saves lender selection snapshot and marks application as submitted
-// ─────────────────────────────────────────
+// Saves who the user picked. Status stays draft.
+// currentStep moves to confirmation — nothing submitted yet.
 router.post('/select', async (req, res) => {
 
-  const {
-    lenderObjectId,
-    lenderId,
-    selectedTenureMonths,
-    offeredInterestRate,
-    processingFeePercentage,
-    processingFeeAmount,
-    estimatedEmi
-  } = req.body;
+  const { lenderObjectId, lenderId } = req.body;
 
-  if (
-    !lenderObjectId        ||
-    !lenderId              ||
-    !selectedTenureMonths  ||
-    !offeredInterestRate   ||
-    !processingFeePercentage ||
-    !processingFeeAmount   ||
-    !estimatedEmi
-  ) {
+  if (!lenderObjectId || !lenderId) {
     return res.status(400).json({
       success: false,
-      message: 'All lender selection fields are required'
+      message: 'lenderObjectId and lenderId are required'
     });
   }
 
@@ -198,7 +182,6 @@ router.post('/select', async (req, res) => {
       });
     }
 
-    // Verify lender actually exists and is still active
     const lender = await Lender.findById(lenderObjectId);
 
     if (!lender || lender.status !== 'active') {
@@ -208,51 +191,25 @@ router.post('/select', async (req, res) => {
       });
     }
 
-    // Save the lender selection snapshot
-    // We store both the ObjectId (for populate) and lenderCode string (for display)
     application.lenderSelection = {
-      lenderId:                lenderObjectId,
-      lenderCode:              lenderId,
-      name:                    lender.name,
-      offeredInterestRate:     Number(offeredInterestRate),
-      processingFeePercentage: Number(processingFeePercentage),
-      processingFeeAmount:     Number(processingFeeAmount),
-      estimatedEmi:            Number(estimatedEmi),
-      selectedTenureMonths:    Number(selectedTenureMonths),
-      selectedAt:              new Date(),
-      lenderStatus:            'pending',
-      approvedLoanAmount:      null,
-      lenderRemarks:           null,
-      lenderRespondedAt:       null
+      lenderId:     lenderObjectId,
+      lenderCode:   lenderId,
+      name:         lender.name,
+      selectedAt:   new Date(),
+      lenderStatus: 'pending'
     };
 
-    // Move application to submitted state
-    application.currentStep = 'submitted';
-    application.status      = 'submitted';
+    // Status stays draft — user hasn't confirmed yet
+    application.currentStep = 'confirmation';
 
     await application.save();
 
-    // Notify the user that their application has been submitted
-    await createNotification(
-      req.user.id,
-      'Application Submitted',
-      `Your loan application ${application.applicationId} has been submitted to ${lender.name}. You will hear back within ${lender.disbursal.averageDisbursalHours} hours.`,
-      'application',
-      application.applicationId
-    );
-
     return res.status(200).json({
       success: true,
-      message: 'Application submitted successfully',
+      message: 'Lender selected. Proceed to confirmation.',
       data: {
-        applicationId:      application.applicationId,
-        status:             application.status,
-        lenderName:         lender.name,
-        selectedTenureMonths,
-        offeredInterestRate,
-        estimatedEmi,
-        processingFeeAmount,
-        averageDisbursalHours: lender.disbursal.averageDisbursalHours
+        applicationId: application.applicationId,
+        nextStep:      'confirmation'
       }
     });
 
@@ -264,6 +221,5 @@ router.post('/select', async (req, res) => {
     });
   }
 });
-
 
 export default router;

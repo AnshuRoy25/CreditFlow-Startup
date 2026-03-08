@@ -252,55 +252,29 @@ const loanDetailsSchema = new mongoose.Schema({
 
 const lenderSelectionSchema = new mongoose.Schema({
 
-  // Reference to Lenders collection
-  // Used to populate logo, tagline, contact etc when needed
   lenderId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Lender',
     default: null
   },
 
-  // Snapshot of the string lenderId like "LND001"
-  // So we don't lose the reference even if Lender doc changes
-  lenderCode: {
-    type: String,
-    default: null
-  },
+  lenderCode: { type: String, default: null },
+  name:       { type: String, default: null },
+  selectedAt: { type: Date,   default: null },
 
-  name: {
-    type: String,
-    default: null
-  },
-
-  // ─────────────────────────────
-  // Offer snapshot at time of selection
-  // These are personalised — calculated for this specific borrower
-  // Stored here because they could differ from lender's general rates
-  // ─────────────────────────────
-  offeredInterestRate:      { type: Number, default: null },
-  processingFeePercentage:  { type: Number, default: null },
-  processingFeeAmount:      { type: Number, default: null },
-  estimatedEmi:             { type: Number, default: null },
-  selectedTenureMonths:     { type: Number, default: null },
-
-  selectedAt: {
-    type: Date,
-    default: null
-  },
-
-  // ─────────────────────────────
-  // Lender's decision
-  // Updated when lender responds
-  // ─────────────────────────────
   lenderStatus: {
     type: String,
     enum: ['pending', 'approved', 'rejected'],
     default: 'pending'
   },
 
-  approvedLoanAmount:   { type: Number, default: null },  // lender decides this
-  lenderRemarks:        { type: String, default: null },
-  lenderRespondedAt:    { type: Date,   default: null }
+  approvedLoanAmount: { type: Number, default: null },
+  approvedRate:       { type: Number, default: null },
+  approvedTenure:     { type: Number, default: null },
+  approvedEmi:        { type: Number, default: null },
+  lenderRemarks:      { type: String, default: null },
+  lenderRespondedAt:  { type: Date,   default: null },
+  
 
 });
 
@@ -348,7 +322,9 @@ const loanApplicationSchema = new mongoose.Schema(
         'approved',    // lender approved
         'rejected',    // lender rejected
         'disbursed',   // loan disbursed
-        'withdrawn'    // user withdrew application
+        'withdrawn',    // user withdrew application
+        'offer-review',   // ← add this
+        'rejected'
       ],
       default: 'draft'
     },
