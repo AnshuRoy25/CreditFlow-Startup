@@ -3,13 +3,14 @@ from dotenv import load_dotenv
 import os
 
 from routes.verify_employment import verify_employment_bp
+from routes.generate_report import generate_report_bp
 
 load_dotenv()
 
 app = Flask(__name__)
 
-# Register blueprints
 app.register_blueprint(verify_employment_bp)
+app.register_blueprint(generate_report_bp)
 
 
 @app.route('/health', methods=['GET'])

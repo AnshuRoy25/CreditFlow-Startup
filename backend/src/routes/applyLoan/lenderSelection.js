@@ -16,28 +16,31 @@ const router = express.Router();
 // ─────────────────────────────────────────────────────────
 router.post('/match', async (req, res) => {
 
-  const { ntcScore, riskTier, loanAmount } = req.body;
-
-  if (!ntcScore || !riskTier || !loanAmount) {
-    return res.status(400).json({
-      success: false,
-      message: 'ntcScore, riskTier and loanAmount are required'
-    });
-  }
-
   try {
 
     const application = await LoanApplication.findOne({
-      userId: req.user.id,
-      status: 'draft'
-    });
+      userId:      req.user.id,
+      status:      'draft',
+      currentStep: 'report-generated'
+    }).populate('reportId');
 
     if (!application) {
       return res.status(404).json({
         success: false,
-        message: 'Application not found.'
+        message: 'Application not found or report not yet generated.'
       });
     }
+
+    if (!application.reportId) {
+      return res.status(404).json({
+        success: false,
+        message: 'Report not found. Please generate your report first.'
+      });
+    }
+
+    const ntcScore  = application.reportId.ntcScore;
+    const riskTier  = application.reportId.riskTier;
+    const loanAmount = application.loanDetails.loanAmount;
 
     const allLenders = await Lender.find({ status: 'active' });
 
@@ -48,28 +51,24 @@ router.post('/match', async (req, res) => {
 
       const reasons = [];
 
-      // Check 1 — NTC score minimum
       if (ntcScore < lender.ntcPolicy.minimumNtcScore) {
         reasons.push(
           `Minimum score required is ${lender.ntcPolicy.minimumNtcScore}. Your score is ${ntcScore}.`
         );
       }
 
-      // Check 2 — Risk tier accepted
       if (!lender.ntcPolicy.acceptedRiskTiers.includes(riskTier)) {
         reasons.push(
           `Your risk tier ${riskTier} is not accepted by this lender.`
         );
       }
 
-      // Check 3 — Loan amount minimum
       if (loanAmount < lender.loanOffering.minLoanAmount) {
         reasons.push(
           `Minimum loan amount for this lender is ₹${lender.loanOffering.minLoanAmount}.`
         );
       }
 
-      // Check 4 — Loan amount maximum
       if (loanAmount > lender.loanOffering.maxLoanAmount) {
         reasons.push(
           `Maximum loan amount for this lender is ₹${lender.loanOffering.maxLoanAmount}.`
@@ -84,8 +83,8 @@ router.post('/match', async (req, res) => {
           name:                    lender.name,
           logo:                    lender.logo,
           tagline:                 lender.tagline,
-          interestRateRange:       lender.loanOffering.interestRateRange,   // { min, max }
-          tenureRange:             lender.loanOffering.tenureRange,          // { minMonths, maxMonths }
+          interestRateRange:       lender.loanOffering.interestRateRange,
+          tenureRange:             lender.loanOffering.tenureRange,
           loanAmountRange: {
             min: lender.loanOffering.minLoanAmount,
             max: lender.loanOffering.maxLoanAmount
@@ -111,7 +110,6 @@ router.post('/match', async (req, res) => {
       }
     }
 
-    // Sort eligible lenders — best rated first
     eligibleLenders.sort((a, b) => b.rating - a.rating);
 
     return res.status(200).json({
