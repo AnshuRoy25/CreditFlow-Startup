@@ -304,11 +304,14 @@ const loanApplicationSchema = new mongoose.Schema(
       enum: [
         'personal-details',
         'employment-details',
-        'bank-statement',
         'loan-details',
+        'report-pending',       // ← new, replaces bank-statement
         'report-generated',
         'lender-selected',
-        'submitted'
+        'confirmation',
+        'submitted',
+        'offer-review',
+        'rejected'
       ],
       default: 'personal-details'
     },
@@ -324,7 +327,6 @@ const loanApplicationSchema = new mongoose.Schema(
         'disbursed',   // loan disbursed
         'withdrawn',    // user withdrew application
         'offer-review',   // ← add this
-        'rejected'
       ],
       default: 'draft'
     },

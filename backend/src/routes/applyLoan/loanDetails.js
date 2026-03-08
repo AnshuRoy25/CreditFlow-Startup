@@ -52,7 +52,8 @@ router.post('/submit', async (req, res) => {
     };
 
     if (application.currentStep === 'loan-details') {
-      application.currentStep = 'report-generated';
+      application.currentStep = 'report-pending';
+      // bank-statement step now means: upload PDF + generate report
     }
 
     await application.save();

@@ -4,6 +4,7 @@ import express from 'express';
 import LoanApplication from '../../models/LoanApplication.js';
 import Lender from '../../models/Lender.js';
 import createNotification from '../../helpers/createNotification.js';
+import buildLenderPayload from '../../helpers/buildLenderPayload.js';
 
 const router = express.Router();
 

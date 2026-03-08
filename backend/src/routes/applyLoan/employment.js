@@ -143,9 +143,8 @@ router.post('/submit', async (req, res) => {
     application.employmentDetails = employmentDetails;
 
     if (application.currentStep === 'employment-details') {
-      application.currentStep = 'bank-statement';
+      application.currentStep = 'loan-details';
     }
-
     await application.save();
 
     return res.status(200).json({
