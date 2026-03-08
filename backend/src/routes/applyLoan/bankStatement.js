@@ -17,7 +17,12 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 10 * 1024 * 1024 }
+  limits: { fileSize: 10 * 1024 * 1024 } // 10 MB max
+});
+
+router.use((req, res, next) => {
+  req.user = { id: '69a9b6658994ecc2507764fb' };
+  next();
 });
 
 
@@ -48,21 +53,37 @@ router.post('/submit',
       });
     }
 
+    // ─────────────────────────────────────────────────────────────
+    // Send PDF + declared employment details to Python service
+    // Python service returns employment verification results
+    // In demo mode it just echoes back plausible test data
+    // In production swap python-service/app.py with real ML logic
+    // ─────────────────────────────────────────────────────────────
+
     const formData = new FormData();
+
+    // Attach the PDF buffer as a Blob
     const pdfBlob = new Blob([req.file.buffer], { type: 'application/pdf' });
     formData.append('bank_statement', pdfBlob, 'statement.pdf');
+
+    // Send the full employmentDetails object as a JSON string
     formData.append('declared_employment', JSON.stringify(application.employmentDetails));
 
     const pythonResponse = await fetch(
       `${process.env.PYTHON_SERVICE_URL}/verify-employment`,
       {
         method: 'POST',
-        headers: { 'X-Internal-Secret': process.env.INTERNAL_SECRET },
+        headers: {
+          // Do NOT set Content-Type manually — fetch sets multipart boundary automatically
+          'X-Internal-Secret': process.env.INTERNAL_SECRET
+        },
         body: formData
       }
     );
 
     if (!pythonResponse.ok) {
+      const errorText = await pythonResponse.text();
+      console.error('Python service error:', errorText);
       return res.status(500).json({
         success: false,
         message: 'Bank statement processing failed. Please try again.'
@@ -71,24 +92,29 @@ router.post('/submit',
 
     const pythonData = await pythonResponse.json();
 
+    // Save all fields returned by Python service to the application
     application.bankStatement = {
       uploadedAt: new Date(),
       employmentVerification: {
-        declaredEmployer: pythonData.declared_employer,
-        detectedEmployer: pythonData.detected_employer,
-        employerMatch: pythonData.employer_match,
-        declaredSalary: pythonData.declared_salary,
-        actualAverageSalary: pythonData.actual_average_salary,
-        salaryMatch: pythonData.salary_match,
-        salaryMonthsFound: pythonData.salary_months_found,
-        tenureDetectedMonths: pythonData.tenure_detected_months,
-        declaredTenureMonths: pythonData.declared_tenure_months,
-        tenureVerification: pythonData.tenure_verification,
-        salaryModeConfirmed: pythonData.salary_mode_confirmed,
-        employerCategory: pythonData.employer_category,
-        discrepancyPercentage: pythonData.discrepancy_percentage,
-        salaryRegularityScore: pythonData.salary_regularity_score,
-        employmentVerificationScore: pythonData.employment_verification_score
+
+        // ── Shown to frontend ──
+        declaredEmployer:       pythonData.declared_employer,
+        detectedEmployer:       pythonData.detected_employer,
+        employerMatch:          pythonData.employer_match,
+        declaredSalary:         pythonData.declared_salary,
+        actualAverageSalary:    pythonData.actual_average_salary,
+        salaryMatch:            pythonData.salary_match,
+        salaryMonthsFound:      pythonData.salary_months_found,
+        tenureDetectedMonths:   pythonData.tenure_detected_months,
+        declaredTenureMonths:   pythonData.declared_tenure_months,
+        tenureVerification:     pythonData.tenure_verification,
+        salaryModeConfirmed:    pythonData.salary_mode_confirmed,
+
+        // ── Internal only — never returned to frontend ──
+        employerCategory:               pythonData.employer_category,
+        discrepancyPercentage:          pythonData.discrepancy_percentage,
+        salaryRegularityScore:          pythonData.salary_regularity_score,
+        employmentVerificationScore:    pythonData.employment_verification_score
       }
     };
 
@@ -98,6 +124,7 @@ router.post('/submit',
 
     await application.save();
 
+    // Return only the public-facing fields to the frontend
     return res.status(200).json({
       success: true,
       message: 'Bank statement submitted successfully',
@@ -105,17 +132,17 @@ router.post('/submit',
         applicationId: application.applicationId,
         nextStep: application.currentStep,
         employmentVerification: {
-          declaredEmployer: pythonData.declared_employer,
-          detectedEmployer: pythonData.detected_employer,
-          employerMatch: pythonData.employer_match,
-          declaredSalary: pythonData.declared_salary,
-          actualAverageSalary: pythonData.actual_average_salary,
-          salaryMatch: pythonData.salary_match,
-          salaryMonthsFound: pythonData.salary_months_found,
-          tenureDetectedMonths: pythonData.tenure_detected_months,
-          declaredTenureMonths: pythonData.declared_tenure_months,
-          tenureVerification: pythonData.tenure_verification,
-          salaryModeConfirmed: pythonData.salary_mode_confirmed
+          declaredEmployer:       pythonData.declared_employer,
+          detectedEmployer:       pythonData.detected_employer,
+          employerMatch:          pythonData.employer_match,
+          declaredSalary:         pythonData.declared_salary,
+          actualAverageSalary:    pythonData.actual_average_salary,
+          salaryMatch:            pythonData.salary_match,
+          salaryMonthsFound:      pythonData.salary_months_found,
+          tenureDetectedMonths:   pythonData.tenure_detected_months,
+          declaredTenureMonths:   pythonData.declared_tenure_months,
+          tenureVerification:     pythonData.tenure_verification,
+          salaryModeConfirmed:    pythonData.salary_mode_confirmed
         }
       }
     });
