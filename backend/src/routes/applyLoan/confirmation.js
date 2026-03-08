@@ -142,6 +142,17 @@ router.post('/submit', async (req, res) => {
 
     await application.save();
 
+    const payload = buildLenderPayload(application);
+
+    await fetch('http://localhost:7777/api/lender/receive', {
+    method:  'POST',
+    headers: {
+        'x-lender-secret': process.env.LENDER_CALLBACK_SECRET,
+        'Content-Type':    'application/json'
+    },
+    body: JSON.stringify(payload)
+    });
+
     // Notify user
     await createNotification(
       req.user.id,

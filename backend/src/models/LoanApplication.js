@@ -350,6 +350,13 @@ const loanApplicationSchema = new mongoose.Schema(
     employmentDetails: employmentDetailsSchema,
     bankStatement: bankStatementSchema,
     loanDetails: loanDetailsSchema,  
+
+    reportId: {
+      type:    mongoose.Schema.Types.ObjectId,
+      ref:     'Report',
+      default: null
+    },
+
     lenderSelection: lenderSelectionSchema 
 
 

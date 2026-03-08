@@ -78,37 +78,19 @@ router.post('/match', async (req, res) => {
 
       if (reasons.length === 0) {
 
-        // Calculate personalised interest rate
-        // Higher NTC score → rate closer to minimum
-        // Lower NTC score → rate closer to maximum
-        const maxPossibleScore = 850;
-        const scoreRange       = maxPossibleScore - lender.ntcPolicy.minimumNtcScore;
-        const borrowerAboveMin = ntcScore - lender.ntcPolicy.minimumNtcScore;
-        const scoreRatio       = borrowerAboveMin / scoreRange;
-        const rateRange        = lender.loanOffering.interestRateRange.max - lender.loanOffering.interestRateRange.min;
-        const offeredRate      = lender.loanOffering.interestRateRange.max - (scoreRatio * rateRange);
-        const finalRate        = Math.round(offeredRate * 10) / 10;
-
-        // Calculate indicative EMI at offered rate for max tenure
-        // This is shown to the user to compare lenders — not confirmed by lender
-        const P   = loanAmount;
-        const r   = finalRate / 12 / 100;
-        const n   = lender.loanOffering.tenureRange.maxMonths;
-        const emi = Math.round((P * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1));
-
-        const processingFeeAmount = Math.round(loanAmount * lender.loanOffering.processingFeePercentage / 100);
-
         eligibleLenders.push({
-          lenderId:                lender.lenderId,       // "LND001" string
-          lenderObjectId:          lender._id,            // ObjectId — needed in /select
+          lenderId:                lender.lenderId,
+          lenderObjectId:          lender._id,
           name:                    lender.name,
           logo:                    lender.logo,
           tagline:                 lender.tagline,
-          offeredInterestRate:     finalRate,             // indicative — CreditFlow's estimate
+          interestRateRange:       lender.loanOffering.interestRateRange,   // { min, max }
+          tenureRange:             lender.loanOffering.tenureRange,          // { minMonths, maxMonths }
+          loanAmountRange: {
+            min: lender.loanOffering.minLoanAmount,
+            max: lender.loanOffering.maxLoanAmount
+          },
           processingFeePercentage: lender.loanOffering.processingFeePercentage,
-          processingFeeAmount,                            // indicative
-          tenureRange:             lender.loanOffering.tenureRange,
-          estimatedEmi:            emi,                   // indicative
           averageDisbursalHours:   lender.disbursal.averageDisbursalHours,
           rating:                  lender.reputation.rating,
           eligible:                true
@@ -129,8 +111,8 @@ router.post('/match', async (req, res) => {
       }
     }
 
-    // Sort eligible lenders — lowest rate first
-    eligibleLenders.sort((a, b) => a.offeredInterestRate - b.offeredInterestRate);
+    // Sort eligible lenders — best rated first
+    eligibleLenders.sort((a, b) => b.rating - a.rating);
 
     return res.status(200).json({
       success: true,

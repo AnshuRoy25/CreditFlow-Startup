@@ -1,9 +1,9 @@
-
 // ─────────────────────────────────────────────────────────
-// Read-only view of CreditFlow's loanapplications collection.
-// This lives in test-apis because the lender portal server
-// reads directly from the same MongoDB as the main backend.
-// We only define fields the lender portal actually needs.
+// Lender's own copy of received applications.
+// Stored in 'lender_applications' collection — completely
+// separate from CreditFlow's 'loanapplications' collection.
+// Main backend sends this data via POST /api/lender/receive
+// when a user submits their application.
 // ─────────────────────────────────────────────────────────
 
 import mongoose from 'mongoose';
@@ -84,7 +84,7 @@ const loanApplicationSchema = new mongoose.Schema(
     }
   },
   {
-    collection: 'loanapplications', // same collection as main backend
+    collection: 'lender_applications', // same collection as main backend
     timestamps: true
   }
 );

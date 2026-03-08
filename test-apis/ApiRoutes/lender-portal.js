@@ -27,10 +27,6 @@ const router = express.Router();
 // We only define the fields we need to display.
 // ─────────────────────────────────────────────────────────
 
-// Use existing model if already registered (hot reload safety)
-const LenderPortalApp = mongoose.models.LenderPortalApp ||
-  mongoose.model('LenderPortalApp', lenderPortalAppSchema);
-
 
 // ─── Helper: call back CreditFlow ────────────────────────
 const CREDITFLOW_URL      = process.env.CREDITFLOW_URL || 'http://localhost:4000';
@@ -283,5 +279,39 @@ router.post('/applications/:applicationId/reject', async (req, res) => {
   }
 });
 
+// POST /api/lender/receive
+// Called by CreditFlow main backend when user submits application
+router.post('/receive', async (req, res) => {
+
+  const secret = req.headers['x-lender-secret'];
+
+  if (secret !== process.env.LENDER_CALLBACK_SECRET) {
+    return res.status(401).json({ success: false, message: 'Unauthorised.' });
+  }
+
+  try {
+
+    const existing = await LoanApplication.findOne({
+      applicationId: req.body.applicationId
+    });
+
+    if (existing) {
+      return res.status(409).json({ success: false, message: 'Application already received.' });
+    }
+
+    const application = new LoanApplication(req.body);
+    await application.save();
+
+    return res.status(201).json({
+      success: true,
+      message: 'Application received.',
+      applicationId: req.body.applicationId
+    });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ success: false, message: 'Something went wrong.' });
+  }
+});
 
 export default router;

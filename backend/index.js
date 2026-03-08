@@ -13,6 +13,7 @@ import statusRoutes from './src/routes/applyLoan/status.js';
 import lenderSelectionRoutes from './src/routes/applyLoan/lenderSelection.js';
 import confirmationRoutes from './src/routes/applyLoan/confirmation.js';
 import lenderCallbackRoutes from './src/routes/lenderCallback.js';
+import buildLenderPayload from '../../helpers/buildLenderPayload.js';
 
 
 const app = express();
