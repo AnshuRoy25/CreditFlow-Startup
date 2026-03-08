@@ -176,6 +176,23 @@ router.post('/verify-aadhaar-otp', async (req, res) => {
 // Route 4 — Submit Personal Details
 // POST /api/apply-loan/personal/submit
 router.post('/submit', async (req, res) => {
+
+  const lastApplication = await LoanApplication.findOne({
+  userId: req.user.id,
+  cooldownEndsAt: { $ne: null }
+}).sort({ updatedAt: -1 });
+
+    if (lastApplication && lastApplication.cooldownEndsAt > new Date()) {
+    const daysRemaining = Math.ceil(
+        (lastApplication.cooldownEndsAt - new Date()) / (1000 * 60 * 60 * 24)
+    );
+    return res.status(403).json({
+        success: false,
+        message: `You can apply again in ${daysRemaining} days.`,
+        cooldownEndsAt: lastApplication.cooldownEndsAt
+    });
+    }  
+
   const { pan, name, dob, gender, address, email, mobile } = req.body;
 
   if (!pan || !name || !dob || !gender || !address || !email || !mobile) {

@@ -299,6 +299,20 @@ const loanApplicationSchema = new mongoose.Schema(
       default: 'draft'
     },
 
+    // When this application reached a terminal state
+    // Used to calculate cooldown for next application
+    cooldownEndsAt: {
+      type: Date,
+      default: null
+    },
+
+    // Why the application ended
+    terminalState: {
+      type: String,
+      enum: ['rejected', 'withdrawn', 'disbursed', 'completed'],
+      default: null
+    },
+
     // Personal details section
     // Will add employmentDetails, bankStatement,
     // loanDetails, reportData sections later
