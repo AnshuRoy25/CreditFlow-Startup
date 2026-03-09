@@ -139,7 +139,7 @@ router.post('/submit', async (req, res) => {
 
     // NOW mark as submitted
     application.status      = 'submitted';
-    application.currentStep = 'submitted';
+    application.currentStep = 'application-track'; 
 
     await application.save();
 

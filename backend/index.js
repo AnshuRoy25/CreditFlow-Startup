@@ -10,6 +10,9 @@ import complaintRoutes from './src/routes/helpAndSupport/complaint.js';
 import notificationRoutes from './src/routes/notifications.js';
 import statusRoutes from './src/routes/applyLoan/status.js';
 import lenderCallbackRoutes from './src/routes/lenderCallback.js';
+import myApplicationsRoutes from './src/routes/myApplications.js';
+import myLoansRoutes from './src/routes/myLoans.js';
+
 
 const app = express();
 app.use(express.json());
@@ -24,6 +27,8 @@ app.use('/api/complaint', complaintRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/apply-loan/status', statusRoutes);
 app.use('/api/lender-callback', lenderCallbackRoutes);
+app.use('/api/my-applications', myApplicationsRoutes);
+app.use('/api/my-loans', myLoansRoutes);
 
 app.listen(config.port || 4000, () => {
   console.log(`CreditFlow backend running on port ${config.port || 4000}`);

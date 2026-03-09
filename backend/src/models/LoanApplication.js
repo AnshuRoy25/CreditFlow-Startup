@@ -309,8 +309,10 @@ const loanApplicationSchema = new mongoose.Schema(
         'report-generated',
         'lender-selected',
         'confirmation',
-        'submitted',
+        'application-track',
         'offer-review',
+        'esign',
+        'application-track',
         'rejected'
       ],
       default: 'personal-details'
@@ -326,7 +328,9 @@ const loanApplicationSchema = new mongoose.Schema(
         'rejected',    // lender rejected
         'disbursed',   // loan disbursed
         'withdrawn',    // user withdrew application
-        'offer-review',   // ← add this
+        'offer-review',
+        "pre-disbursement",
+        'disbursed'
       ],
       default: 'draft'
     },
