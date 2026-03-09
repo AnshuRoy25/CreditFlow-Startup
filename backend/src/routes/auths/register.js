@@ -1,20 +1,18 @@
 import express from 'express';
 import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 import User from '../../models/user.js';
+import config from '../../config/config.js';
 
 const router = express.Router();
 
 // In memory OTP store for registration
-// Same pattern as Aadhaar OTP
 const registrationOtpStore = {};
 
 
 // ─────────────────────────────────────────
 // Route 1 — Send Registration OTP
 // POST /api/auth/send-otp
-// User enters mobile number
-// We check not already registered
-// Send OTP to that number
 // ─────────────────────────────────────────
 router.post('/send-otp', async (req, res) => {
 
@@ -37,7 +35,6 @@ router.post('/send-otp', async (req, res) => {
 
   try {
 
-    // Check if mobile already registered
     const existingUser = await User.findOne({ mobile });
     if (existingUser) {
       return res.status(400).json({
@@ -46,10 +43,8 @@ router.post('/send-otp', async (req, res) => {
       });
     }
 
-    // Generate 6 digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-    // Store OTP with 5 minute expiry
     registrationOtpStore[mobile] = {
       otp,
       expiresAt: Date.now() + 5 * 60 * 1000
@@ -77,8 +72,6 @@ router.post('/send-otp', async (req, res) => {
 // ─────────────────────────────────────────
 // Route 2 — Verify Registration OTP
 // POST /api/auth/verify-otp
-// User enters OTP
-// We verify it is correct and not expired
 // ─────────────────────────────────────────
 router.post('/verify-otp', async (req, res) => {
 
@@ -114,9 +107,7 @@ router.post('/verify-otp', async (req, res) => {
     });
   }
 
-  // OTP verified
-  // Mark this mobile as otp verified in store
-  // So Route 3 knows OTP was completed before setting MPIN
+  // Mark OTP as verified so Route 3 knows it was completed
   registrationOtpStore[mobile].otpVerified = true;
 
   return res.status(200).json({
@@ -129,8 +120,8 @@ router.post('/verify-otp', async (req, res) => {
 // ─────────────────────────────────────────
 // Route 3 — Set MPIN and Create Account
 // POST /api/auth/set-mpin
-// User sets 4 digit MPIN and confirms it
-// Account created here
+// Account created here + token generated
+// User is automatically logged in after registering
 // ─────────────────────────────────────────
 router.post('/set-mpin', async (req, res) => {
 
@@ -143,7 +134,6 @@ router.post('/set-mpin', async (req, res) => {
     });
   }
 
-  // MPIN must be exactly 4 digits
   const mpinRegex = /^[0-9]{4}$/;
   if (!mpinRegex.test(mpin)) {
     return res.status(400).json({
@@ -170,8 +160,7 @@ router.post('/set-mpin', async (req, res) => {
 
   try {
 
-    // Check mobile not already registered
-    // Double check in case of race condition
+    // Double check mobile not already registered
     const existingUser = await User.findOne({ mobile });
     if (existingUser) {
       return res.status(400).json({
@@ -194,10 +183,20 @@ router.post('/set-mpin', async (req, res) => {
     // Clean up OTP store
     delete registrationOtpStore[mobile];
 
+    // Generate JWT token so user is automatically logged in
+    // No need to go to login screen after registering
+    // this is perfectly fine too
+    const token = jwt.sign(
+      { id: user._id },
+      config.jwtSecret,
+      { expiresIn: config.jwtExpiresIn }
+    );
+
     return res.status(201).json({
       success: true,
       message: 'Account created successfully',
       data: {
+        token,
         userId: user._id,
         mobile: user.mobile
       }

@@ -1,6 +1,8 @@
 import express from 'express';
 import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 import User from '../../models/user.js';
+import config from '../../config/config.js';
 
 const router = express.Router();
 
@@ -25,7 +27,6 @@ router.post('/login', async (req, res) => {
     });
   }
 
-  // MPIN must be exactly 4 digits
   const mpinRegex = /^[0-9]{4}$/;
   if (!mpinRegex.test(mpin)) {
     return res.status(400).json({
@@ -62,12 +63,21 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // No JWT for now
-    // Just return user details on successful login
+    // Generate JWT token
+    // Payload contains user id and mobile
+    // Token expires based on JWT_EXPIRES_IN in .env (default 7d)
+   // this is perfectly fine too
+    const token = jwt.sign(
+      { id: user._id },
+      config.jwtSecret,
+      { expiresIn: config.jwtExpiresIn }
+    );
+
     return res.status(200).json({
       success: true,
       message: 'Logged in successfully',
       data: {
+        token,
         userId: user._id,
         name: user.name,
         mobile: user.mobile,

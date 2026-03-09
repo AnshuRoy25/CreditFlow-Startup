@@ -6,12 +6,6 @@ import Lender from '../models/Lender.js';
 
 const router = express.Router();
 
-// TEMPORARY — remove when JWT middleware is added
-router.use((req, res, next) => {
-  req.user = { id: '69a9b6658994ecc2507764fb' };
-  next();
-});
-
 
 // ─────────────────────────────────────────────────────────
 // Route 1 — Get All Loans

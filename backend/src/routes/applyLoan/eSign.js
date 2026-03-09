@@ -6,11 +6,8 @@ import createNotification from '../../helpers/createNotification.js';
 
 const router = express.Router();
 
-// TEMPORARY — remove when JWT middleware is added
-router.use((req, res, next) => {
-  req.user = { id: '69a9b6658994ecc2507764fb' };
-  next();
-});
+// ─── REMOVED hardcoded req.user block ───
+// auth middleware in index.js now handles this
 
 // In memory OTP store for eSign
 const eSignOtpStore = {};
@@ -19,8 +16,6 @@ const eSignOtpStore = {};
 // ─────────────────────────────────────────────────────────
 // Route 1 — Initiate eSign
 // GET /api/apply-loan/esign/initiate
-// Called when user lands on eSign page
-// Returns the loan agreement PDF for user to review
 // ─────────────────────────────────────────────────────────
 router.get('/initiate', async (req, res) => {
 
@@ -73,8 +68,6 @@ router.get('/initiate', async (req, res) => {
 // ─────────────────────────────────────────────────────────
 // Route 2 — Send Aadhaar OTP
 // POST /api/apply-loan/esign/send-otp
-// User enters Aadhaar number
-// OTP sent to their Aadhaar registered mobile
 // ─────────────────────────────────────────────────────────
 router.post('/send-otp', async (req, res) => {
 
@@ -119,7 +112,6 @@ router.post('/send-otp', async (req, res) => {
       });
     }
 
-    // Store aadhaar in memory against userId for verification in complete route
     eSignOtpStore[req.user.id] = {
       aadhaar,
       expiresAt: Date.now() + 5 * 60 * 1000
@@ -143,8 +135,6 @@ router.post('/send-otp', async (req, res) => {
 // ─────────────────────────────────────────────────────────
 // Route 3 — Complete eSign
 // POST /api/apply-loan/esign/complete
-// User enters OTP and clicks Confirm & Sign
-// OTP verified, step and status updated, PDF deleted
 // ─────────────────────────────────────────────────────────
 router.post('/complete', async (req, res) => {
 
@@ -188,7 +178,6 @@ router.post('/complete', async (req, res) => {
       });
     }
 
-    // Verify OTP with test Aadhaar service
     const response = await fetch(
       'http://localhost:7777/api/verify-aadhaar-otp',
       {
@@ -208,15 +197,12 @@ router.post('/complete', async (req, res) => {
       });
     }
 
-    // Clean up OTP store
     delete eSignOtpStore[req.user.id];
 
-    // Update application
     application.currentStep = 'application-track';
     application.status      = 'pre-disbursement';
     await application.save();
 
-    // Delete the temp loan agreement PDF
     await fetch(
       `${process.env.PYTHON_SERVICE_URL}/delete-loan-agreement`,
       {

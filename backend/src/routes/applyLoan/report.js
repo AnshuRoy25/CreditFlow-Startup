@@ -8,11 +8,8 @@ import createNotification from '../../helpers/createNotification.js';
 
 const router = express.Router();
 
-// TEMPORARY — remove when JWT middleware is added
-router.use((req, res, next) => {
-  req.user = { id: '69a9b6658994ecc2507764fb' };
-  next();
-});
+// ─── REMOVED hardcoded req.user block ───
+// auth middleware in index.js now handles this
 
 const storage = multer.memoryStorage();
 const fileFilter = (req, file, cb) => {
@@ -32,10 +29,6 @@ const upload = multer({
 // ─────────────────────────────────────────────────────────
 // Route 1 — Generate Report
 // POST /api/apply-loan/report/generate
-//
-// Upload PDF → python service does everything →
-// returns ntc_score, risk_tier, feature1–feature10
-// We save Report document and advance the step
 // ─────────────────────────────────────────────────────────
 router.post('/generate',
   upload.single('bankStatement'),
@@ -63,7 +56,6 @@ router.post('/generate',
         });
       }
 
-      // ── Send PDF + loan details to python service ───────
       const formData = new FormData();
       const pdfBlob  = new Blob([req.file.buffer], { type: 'application/pdf' });
       formData.append('bank_statement', pdfBlob, 'statement.pdf');
@@ -88,7 +80,6 @@ router.post('/generate',
 
       const pythonData = await pythonResponse.json();
 
-      // ── Save Report document ────────────────────────────
       const report = await Report.create({
         applicationId: application._id,
         userId:        req.user.id,
@@ -109,12 +100,10 @@ router.post('/generate',
         modelVersion: pythonData.model_version || 'ntc-v1'
       });
 
-      // ── Update application ──────────────────────────────
       application.reportId    = report._id;
       application.currentStep = 'report-generated';
       await application.save();
 
-      // ── Notify user ─────────────────────────────────────
       await createNotification(
         req.user.id,
         'Your Credit Report is Ready',
